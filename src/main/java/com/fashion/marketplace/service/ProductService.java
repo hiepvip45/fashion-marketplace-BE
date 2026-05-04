@@ -1,0 +1,132 @@
+package com.fashion.marketplace.service;
+
+import com.fashion.marketplace.dto.request.ProductRequest;
+import com.fashion.marketplace.entity.*;
+import com.fashion.marketplace.exception.ResourceNotFoundException;
+import com.fashion.marketplace.repository.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ProductService {
+
+    private final ProductRepository productRepository;
+    private final FactoryProfileRepository factoryProfileRepository;
+    private final CategoryRepository categoryRepository;
+
+    // ---- Factory: quản lý sản phẩm mẫu sẵn ----
+
+    @Transactional
+    public Product create(Long userId, ProductRequest req) {
+        FactoryProfile factory = factoryProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
+        if (factory.getVerifiedStatus() != FactoryProfile.VerifiedStatus.APPROVED) {
+            throw new IllegalStateException("Xưởng chưa được phê duyệt");
+        }
+
+        Product product = Product.builder()
+                .factory(factory)
+                .name(req.getName())
+                .description(req.getDescription())
+                .price(req.getPrice())
+                .stock(req.getStock() != null ? req.getStock() : 0)
+                .status(Product.ProductStatus.PENDING)
+                .build();
+
+        if (req.getCategoryId() != null) {
+            product.setCategory(categoryRepository.findById(req.getCategoryId()).orElse(null));
+        }
+
+        if (req.getImageUrls() != null) {
+            List<ProductImage> images = req.getImageUrls().stream()
+                    .map(url -> ProductImage.builder().product(product).imageUrl(url).build())
+                    .collect(Collectors.toList());
+            product.setImages(images);
+        }
+
+        return productRepository.save(product);
+    }
+
+    @Transactional
+    public Product update(Long userId, Long productId, ProductRequest req) {
+        Product product = getOwnedProduct(userId, productId);
+        product.setName(req.getName());
+        product.setDescription(req.getDescription());
+        product.setPrice(req.getPrice());
+        if (req.getStock() != null) product.setStock(req.getStock());
+        if (req.getCategoryId() != null) {
+            product.setCategory(categoryRepository.findById(req.getCategoryId()).orElse(null));
+        }
+        return productRepository.save(product);
+    }
+
+    @Transactional
+    public void delete(Long userId, Long productId) {
+        Product product = getOwnedProduct(userId, productId);
+        productRepository.delete(product);
+    }
+
+    @Transactional
+    public Product hide(Long userId, Long productId) {
+        Product product = getOwnedProduct(userId, productId);
+        product.setStatus(Product.ProductStatus.HIDDEN);
+        return productRepository.save(product);
+    }
+
+    public Page<Product> getByFactory(Long userId, Pageable pageable) {
+        FactoryProfile factory = factoryProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
+        return productRepository.findByFactoryId(factory.getId(), pageable);
+    }
+
+    // ---- Public ----
+    public Page<Product> searchActive(String keyword, Long categoryId, Pageable pageable) {
+        return productRepository.searchActive(keyword, categoryId, pageable);
+    }
+
+    public Product getById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+    }
+
+    // ---- Admin: kiểm duyệt ----
+    @Transactional
+    public Product approve(Long productId) {
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+        p.setStatus(Product.ProductStatus.ACTIVE);
+        return productRepository.save(p);
+    }
+
+    @Transactional
+    public Product reject(Long productId, String reason) {
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+        p.setStatus(Product.ProductStatus.REJECTED);
+        p.setRejectedReason(reason);
+        return productRepository.save(p);
+    }
+
+    public Page<Product> getPending(Pageable pageable) {
+        return productRepository.findByStatus(Product.ProductStatus.PENDING, pageable);
+    }
+
+    // helper
+    private Product getOwnedProduct(Long userId, Long productId) {
+        FactoryProfile factory = factoryProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+        if (!product.getFactory().getId().equals(factory.getId())) {
+            throw new AccessDeniedException("Bạn không có quyền sửa sản phẩm này");
+        }
+        return product;
+    }
+}
