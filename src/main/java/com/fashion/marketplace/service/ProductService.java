@@ -113,9 +113,11 @@ public class ProductService {
                 .build();
     }
 
-    public Product getById(Long id) {
-        return productRepository.findById(id)
+    @Transactional(readOnly = true)
+    public ProductResponse getById(Long id) {
+        Product p = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+        return toResponse(p);
     }
 
     // ---- Admin: kiểm duyệt ----

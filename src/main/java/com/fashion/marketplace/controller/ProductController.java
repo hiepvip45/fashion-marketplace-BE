@@ -59,7 +59,7 @@ public class ProductController {
     }
 
     @GetMapping("/api/products/{id}")
-    public ResponseEntity<ApiResponse<Product>> getOne(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> getOne(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(productService.getById(id)));
     }
 
