@@ -1,5 +1,6 @@
 package com.fashion.marketplace.service;
 
+import com.fashion.marketplace.dto.response.FactoryProfileResponse;
 import com.fashion.marketplace.entity.*;
 import com.fashion.marketplace.exception.ResourceNotFoundException;
 import com.fashion.marketplace.repository.*;
@@ -19,6 +20,33 @@ public class FactoryProfileService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+    public FactoryProfileResponse toResponse(FactoryProfile p) {
+        return FactoryProfileResponse.builder()
+                .id(p.getId())
+                .factoryName(p.getFactoryName())
+                .description(p.getDescription())
+                .address(p.getAddress())
+                .minQuantity(p.getMinQuantity())
+                .maxQuantity(p.getMaxQuantity())
+                .leadTimeDays(p.getLeadTimeDays())
+                .ratingAvg(p.getRatingAvg())
+                .totalRatings(p.getTotalRatings())
+                .verifiedStatus(p.getVerifiedStatus().name())
+                .verifiedAt(p.getVerifiedAt())
+                .createdAt(p.getCreatedAt())
+                .imageUrls(p.getImages().stream()
+                        .map(img -> img.getImageUrl())
+                        .toList())
+                .certificates(p.getCertificates().stream()
+                        .map(c -> FactoryProfileResponse.CertInfo.builder()
+                                .name(c.getName())
+                                .imageUrl(c.getImageUrl())
+                                .issuedDate(c.getIssuedDate())
+                                .expiredDate(c.getExpiredDate())
+                                .build())
+                        .toList())
+                .build();
+    }
     // ---- Xưởng: quản lý hồ sơ ----
 
     @Transactional
@@ -40,14 +68,16 @@ public class FactoryProfileService {
         return factoryProfileRepository.save(profile);
     }
 
-    public FactoryProfile getByUserId(Long userId) {
-        return factoryProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
+    @Transactional(readOnly = true)
+    public FactoryProfileResponse getByUserId(Long userId) {
+        return toResponse(factoryProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại")));
     }
 
-    public FactoryProfile getById(Long id) {
-        return factoryProfileRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
+    @Transactional(readOnly = true)
+    public FactoryProfileResponse getById(Long id) {
+        return toResponse(factoryProfileRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại")));
     }
 
     // ---- Admin: xét duyệt hồ sơ ----

@@ -1,5 +1,6 @@
 package com.fashion.marketplace.controller;
 
+import com.fashion.marketplace.dto.response.FactoryProfileResponse;
 import com.fashion.marketplace.entity.FactoryProfile;
 import com.fashion.marketplace.exception.ApiResponse;
 import com.fashion.marketplace.service.FactoryProfileService;
@@ -38,14 +39,14 @@ public class FactoryProfileController {
 
     // PUBLIC
     @GetMapping("/api/factories/{id}")
-    public ResponseEntity<ApiResponse<FactoryProfile>> getPublic(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<FactoryProfileResponse>> getPublic(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(factoryProfileService.getById(id)));
     }
 
     // FACTORY
     @GetMapping("/api/factory/profile")
     @PreAuthorize("hasRole('FACTORY')")
-    public ResponseEntity<ApiResponse<FactoryProfile>> myProfile() {
+    public ResponseEntity<ApiResponse<FactoryProfileResponse>> myProfile() {
         return ResponseEntity.ok(ApiResponse.ok(
                 factoryProfileService.getByUserId(authUtil.currentUserId())));
     }
