@@ -67,7 +67,7 @@ public class ProductController {
 
     @GetMapping("/api/factory/products")
     @PreAuthorize("hasRole('FACTORY')")
-    public ResponseEntity<ApiResponse<Page<Product>>> myProducts(
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> myProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -77,14 +77,14 @@ public class ProductController {
 
     @PostMapping("/api/factory/products")
     @PreAuthorize("hasRole('FACTORY')")
-    public ResponseEntity<ApiResponse<Product>> create(@Valid @RequestBody ProductRequest req) {
+    public ResponseEntity<ApiResponse<ProductResponse>> create(@Valid @RequestBody ProductRequest req) {
         return ResponseEntity.ok(ApiResponse.ok("Thêm sản phẩm thành công",
                 productService.create(authUtil.currentUserId(), req)));
     }
 
     @PutMapping("/api/factory/products/{id}")
     @PreAuthorize("hasRole('FACTORY')")
-    public ResponseEntity<ApiResponse<Product>> update(
+    public ResponseEntity<ApiResponse<ProductResponse>> update(
             @PathVariable Long id, @Valid @RequestBody ProductRequest req) {
         return ResponseEntity.ok(ApiResponse.ok("Cập nhật thành công",
                 productService.update(authUtil.currentUserId(), id, req)));
@@ -99,7 +99,7 @@ public class ProductController {
 
     @PatchMapping("/api/factory/products/{id}/hide")
     @PreAuthorize("hasRole('FACTORY')")
-    public ResponseEntity<ApiResponse<Product>> hide(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> hide(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok("Đã ẩn sản phẩm",
                 productService.hide(authUtil.currentUserId(), id)));
     }
@@ -108,7 +108,7 @@ public class ProductController {
 
     @GetMapping("/api/admin/products/pending")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Page<Product>>> pending(
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> pending(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.ok(
@@ -117,14 +117,14 @@ public class ProductController {
 
     @PatchMapping("/api/admin/products/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Product>> approve(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> approve(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok("Đã duyệt sản phẩm",
                 productService.approve(id)));
     }
 
     @PatchMapping("/api/admin/products/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Product>> reject(
+    public ResponseEntity<ApiResponse<ProductResponse>> reject(
             @PathVariable Long id, @RequestParam String reason) {
         return ResponseEntity.ok(ApiResponse.ok("Đã từ chối sản phẩm",
                 productService.reject(id, reason)));

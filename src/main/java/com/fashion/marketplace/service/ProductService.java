@@ -25,7 +25,7 @@ public class ProductService {
     // ---- Factory: quản lý sản phẩm mẫu sẵn ----
 
     @Transactional
-    public Product create(Long userId, ProductRequest req) {
+    public ProductResponse  create(Long userId, ProductRequest req) {
         FactoryProfile factory = factoryProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
         if (factory.getVerifiedStatus() != FactoryProfile.VerifiedStatus.APPROVED) {
@@ -52,11 +52,11 @@ public class ProductService {
             product.setImages(images);
         }
 
-        return productRepository.save(product);
+        return toResponse(productRepository.save(product));
     }
 
     @Transactional
-    public Product update(Long userId, Long productId, ProductRequest req) {
+    public ProductResponse  update(Long userId, Long productId, ProductRequest req) {
         Product product = getOwnedProduct(userId, productId);
         product.setName(req.getName());
         product.setDescription(req.getDescription());
@@ -65,7 +65,7 @@ public class ProductService {
         if (req.getCategoryId() != null) {
             product.setCategory(categoryRepository.findById(req.getCategoryId()).orElse(null));
         }
-        return productRepository.save(product);
+        return toResponse(productRepository.save(product));
     }
 
     @Transactional
@@ -75,16 +75,18 @@ public class ProductService {
     }
 
     @Transactional
-    public Product hide(Long userId, Long productId) {
+    public ProductResponse  hide(Long userId, Long productId) {
         Product product = getOwnedProduct(userId, productId);
         product.setStatus(Product.ProductStatus.HIDDEN);
-        return productRepository.save(product);
+        return toResponse(productRepository.save(product));
     }
 
-    public Page<Product> getByFactory(Long userId, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getByFactory(Long userId, Pageable pageable) {
         FactoryProfile factory = factoryProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
-        return productRepository.findByFactoryId(factory.getId(), pageable);
+        return productRepository.findByFactoryId(factory.getId(), pageable)
+                .map(this::toResponse);
     }
 
     // ---- Public ----
@@ -122,24 +124,26 @@ public class ProductService {
 
     // ---- Admin: kiểm duyệt ----
     @Transactional
-    public Product approve(Long productId) {
+    public ProductResponse  approve(Long productId) {
         Product p = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
         p.setStatus(Product.ProductStatus.ACTIVE);
-        return productRepository.save(p);
+        return toResponse(productRepository.save(p));
     }
 
     @Transactional
-    public Product reject(Long productId, String reason) {
+    public ProductResponse  reject(Long productId, String reason) {
         Product p = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
         p.setStatus(Product.ProductStatus.REJECTED);
         p.setRejectedReason(reason);
-        return productRepository.save(p);
+        return toResponse(productRepository.save(p));
     }
 
-    public Page<Product> getPending(Pageable pageable) {
-        return productRepository.findByStatus(Product.ProductStatus.PENDING, pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getPending(Pageable pageable) {
+        return productRepository.findByStatus(Product.ProductStatus.PENDING, pageable)
+                .map(this::toResponse);
     }
 
     // helper
