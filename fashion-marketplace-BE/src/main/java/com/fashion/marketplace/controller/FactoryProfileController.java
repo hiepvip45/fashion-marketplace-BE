@@ -1,5 +1,6 @@
 package com.fashion.marketplace.controller;
 
+import com.fashion.marketplace.dto.response.FactoryProfileResponse;
 import com.fashion.marketplace.entity.FactoryProfile;
 import com.fashion.marketplace.exception.ApiResponse;
 import com.fashion.marketplace.service.FactoryProfileService;
@@ -38,16 +39,31 @@ public class FactoryProfileController {
 
     // PUBLIC
     @GetMapping("/api/factories/{id}")
-    public ResponseEntity<ApiResponse<FactoryProfile>> getPublic(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.ok(factoryProfileService.getById(id)));
+    public ResponseEntity<ApiResponse<FactoryProfileResponse>> getPublic(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(factoryProfileService.getByIdResponse(id)));
+    }
+
+    @GetMapping("/api/factories")
+    public ResponseEntity<ApiResponse<Page<FactoryProfileResponse>>> listPublic(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @RequestParam(defaultValue = "verifiedAt,desc") String sort) {
+
+        String[] sortParts = sort.split(",");
+        Sort.Direction dir = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, sortParts[0]));
+
+        return ResponseEntity.ok(ApiResponse.ok(
+                factoryProfileService.getApprovedResponse(pageable)));
     }
 
     // FACTORY
     @GetMapping("/api/factory/profile")
     @PreAuthorize("hasRole('FACTORY')")
-    public ResponseEntity<ApiResponse<FactoryProfile>> myProfile() {
+    public ResponseEntity<ApiResponse<FactoryProfileResponse>> myProfile() {
         return ResponseEntity.ok(ApiResponse.ok(
-                factoryProfileService.getByUserId(authUtil.currentUserId())));
+                factoryProfileService.getByUserIdResponse(authUtil.currentUserId())));
     }
 
     @PostMapping("/api/factory/profile")

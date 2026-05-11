@@ -1,5 +1,6 @@
 package com.fashion.marketplace.service;
 
+import com.fashion.marketplace.dto.response.FactoryProfileResponse;
 import com.fashion.marketplace.entity.*;
 import com.fashion.marketplace.exception.ResourceNotFoundException;
 import com.fashion.marketplace.repository.*;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,11 +52,33 @@ public class FactoryProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ xưởng không tồn tại"));
     }
 
+    @Transactional(readOnly = true)
+    public FactoryProfileResponse getByIdResponse(Long id) {
+        return toResponse(getById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public FactoryProfileResponse getByUserIdResponse(Long userId) {
+        return toResponse(getByUserId(userId));
+    }
+
     // ---- Admin: xét duyệt hồ sơ ----
 
     public Page<FactoryProfile> getPending(Pageable pageable) {
         return factoryProfileRepository.findByVerifiedStatus(
                 FactoryProfile.VerifiedStatus.PENDING, pageable);
+    }
+
+    public Page<FactoryProfile> getApproved(Pageable pageable) {
+        return factoryProfileRepository.findByVerifiedStatus(
+                FactoryProfile.VerifiedStatus.APPROVED, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<FactoryProfileResponse> getApprovedResponse(Pageable pageable) {
+        return factoryProfileRepository.findByVerifiedStatus(
+                        FactoryProfile.VerifiedStatus.APPROVED, pageable)
+                .map(this::toResponse);
     }
 
     public Page<FactoryProfile> getAll(Pageable pageable) {
@@ -130,5 +154,25 @@ public class FactoryProfileService {
         private String imageUrl;
         private java.time.LocalDate issuedDate;
         private java.time.LocalDate expiredDate;
+    }
+
+    public FactoryProfileResponse toResponse(FactoryProfile profile) {
+        return FactoryProfileResponse.builder()
+                .id(profile.getId())
+                .factoryName(profile.getFactoryName())
+                .description(profile.getDescription())
+                .address(profile.getAddress())
+                .minQuantity(profile.getMinQuantity())
+                .maxQuantity(profile.getMaxQuantity())
+                .leadTimeDays(profile.getLeadTimeDays())
+                .ratingAvg(profile.getRatingAvg())
+                .totalRatings(profile.getTotalRatings())
+                .verifiedStatus(profile.getVerifiedStatus() != null ? profile.getVerifiedStatus().name() : null)
+                .verifiedAt(profile.getVerifiedAt())
+                .createdAt(profile.getCreatedAt())
+                .imageUrls(profile.getImages().stream()
+                        .map(FactoryImage::getImageUrl)
+                        .collect(Collectors.toList()))
+                .build();
     }
 }
