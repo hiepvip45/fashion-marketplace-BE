@@ -1,6 +1,7 @@
 package com.fashion.marketplace.service;
 
 import com.fashion.marketplace.dto.request.ProductRequest;
+import com.fashion.marketplace.dto.response.ProductResponse;
 import com.fashion.marketplace.entity.*;
 import com.fashion.marketplace.exception.ResourceNotFoundException;
 import com.fashion.marketplace.repository.*;
@@ -87,8 +88,29 @@ public class ProductService {
     }
 
     // ---- Public ----
-    public Page<Product> searchActive(String keyword, Long categoryId, Pageable pageable) {
-        return productRepository.searchActive(keyword, categoryId, pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> searchActive(String keyword, Long categoryId, Pageable pageable) {
+        return productRepository.searchActive(keyword, categoryId, pageable)
+                .map(this::toResponse);  // convert entity → DTO
+    }
+
+    private ProductResponse toResponse(Product p) {
+        return ProductResponse.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .description(p.getDescription())
+                .price(p.getPrice())
+                .stock(p.getStock())
+                .status(p.getStatus().name())
+                .factoryId(p.getFactory().getId())
+                .factoryName(p.getFactory().getFactoryName())
+                .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
+                .imageUrls(p.getImages().stream()
+                        .map(img -> img.getImageUrl())
+                        .toList())
+                .createdAt(p.getCreatedAt())
+                .build();
     }
 
     public Product getById(Long id) {

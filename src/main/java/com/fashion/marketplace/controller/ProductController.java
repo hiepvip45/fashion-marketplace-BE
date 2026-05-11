@@ -1,6 +1,7 @@
 package com.fashion.marketplace.controller;
 
 import com.fashion.marketplace.dto.request.ProductRequest;
+import com.fashion.marketplace.dto.response.ProductResponse;
 import com.fashion.marketplace.entity.Product;
 import com.fashion.marketplace.exception.ApiResponse;
 import com.fashion.marketplace.service.ProductService;
@@ -41,7 +42,7 @@ public class ProductController {
     // ==================== PUBLIC ====================
 
     @GetMapping("/api/products")
-    public ResponseEntity<ApiResponse<Page<Product>>> search(
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "0") int page,
